@@ -4,16 +4,16 @@ from .views import (
     UserListAPIView,
     UserLoginView,
     UserLogoutView,
-    register_view,
-    user_list_view,
+    UserRegisterView,
+    UserListView,
 )
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
-    path('', user_list_view, name='web-user-list'),
+    path('', UserListView.as_view(), name='web-user-list'),
     path('login/', UserLoginView.as_view(), name='login'),
     path('logout/', UserLogoutView.as_view(), name='logout'),
-    path('register/', register_view, name='register'),
+    path('register/', UserRegisterView.as_view(), name='register'),
 
     path('users/', UserCreateAPIView.as_view(), name='user-create'),
     path('users/list/', UserListAPIView.as_view(), name='user-list'),
