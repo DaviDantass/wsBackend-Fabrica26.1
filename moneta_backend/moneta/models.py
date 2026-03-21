@@ -10,7 +10,7 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.username} - {self.email}"
 
-# CARTEIRA de investimentos do usuário, pode ter vários ativos(açoes, fundos, etc)
+# CARTEIRA de investimentos do usuário, pode ter vários assets(açoes, fundos, etc)
 class Portfolio(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="portfolios") # cascade pois se deletar o usuário, tb deleta os portfólios dele
     name = models.CharField(max_length=100)
@@ -19,8 +19,8 @@ class Portfolio(models.Model):
     def __str__(self):
         return f"{self.name} ({self.user.username})"
     
-class Ativo(models.Model):
-    portfolio = models.ForeignKey(Portfolio, on_delete=models.CASCADE, related_name="ativos") # um ativo é único dentro de um portfólio, mas pode existir em vários portfólios 
+class Asset(models.Model):
+    portfolio = models.ForeignKey(Portfolio, on_delete=models.CASCADE, related_name="assets") # um asset é único dentro de um portfólio, mas pode existir em vários portfólios 
     ticker = models.CharField(max_length=10)
     quantity = models.DecimalField(max_digits=12, decimal_places=2)
     purchase_price = models.DecimalField(max_digits=12, decimal_places=2)

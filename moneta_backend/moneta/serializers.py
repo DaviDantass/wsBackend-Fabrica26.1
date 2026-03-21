@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
-from .models import Portfolio
+from .models import Portfolio, Asset
+from utils.brapi import fetch_brapi_data
 
 User = get_user_model()
 
@@ -40,3 +41,61 @@ class PortfolioSerializer(serializers.ModelSerializer):
         # portfolio será associado ao usuário logado - jwt
         user = self.context['request'].user
         return Portfolio.objects.create(user=user, **validated_data)
+
+
+class AssetSerializer(serializers.ModelSerializer):
+    """
+    Serializer para criar assets em um portfólio.
+    Puxa dados da BRAPI API automaticamente.
+    """
+    portfolio_id = serializers.IntegerField(write_only=True)  # ID do portfólio
+    ticker = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = Asset
+        fields = ['id', 'ticker', 'quantity', 'purchase_price', 'portfolio_id']
+        read_only_fields = ['id']
+
+    def validate(self, attrs):
+        """Validar que o portfólio pertence ao usuário logado"""
+        portfolio_id = attrs.get('portfolio_id')
+        user = self.context['request'].user
+        
+        try:
+            portfolio = Portfolio.objects.get(id=portfolio_id, user=user)
+        except Portfolio.DoesNotExist:
+            raise serializers.ValidationError(
+                {"portfolio_id": "Portfólio não encontrado ou não pertence a você."}
+            )
+        
+        attrs['portfolio'] = portfolio
+        return attrs
+
+    def create(self, validated_data):
+        """
+        Criar asset puxando dados da BRAPI e validando.
+        """
+        ticker = validated_data.pop('ticker').upper().strip()
+        portfolio = validated_data.pop('portfolio')
+        
+        # Verificar duplicata
+        if Asset.objects.filter(portfolio=portfolio, ticker=ticker).exists():
+            raise serializers.ValidationError(
+                {"ticker": f"Asset '{ticker}' já existe neste portfólio."}
+            )
+        
+        # Puxar dados da BRAPI
+        try:
+            brapi_data = fetch_brapi_data(ticker)
+        except Exception as e:
+            raise serializers.ValidationError(
+                {"ticker": f"Erro ao buscar dados da BRAPI: {str(e)}"}
+            )
+        
+        # Criar asset com dados da BRAPI
+        asset = Asset.objects.create(
+            portfolio=portfolio,
+            ticker=ticker,
+            **validated_data
+        )
+        return asset
