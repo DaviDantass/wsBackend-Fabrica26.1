@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from .models import Portfolio
 
 User = get_user_model()
 
@@ -27,3 +28,15 @@ class UserSerializer(serializers.ModelSerializer):
         user.set_password(password)  # senha hashada
         user.save()
         return user
+
+    
+class PortfolioSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Portfolio
+        fields = ['id', 'name', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+    def create(self, validated_data):
+        # portfolio será associado ao usuário logado - jwt
+        user = self.context['request'].user
+        return Portfolio.objects.create(user=user, **validated_data)
