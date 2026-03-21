@@ -5,9 +5,12 @@ from django.urls import reverse_lazy
 from django.views.generic import FormView, TemplateView
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
+from rest_framework.authentication import SessionAuthentication, TokenAuthentication
+from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User, Portfolio, Asset
 from .serializers import UserSerializer, PortfolioSerializer, AssetSerializer
 from .forms import LoginForm, UserRegistrationForm
+from utils.brapi import fetch_brapi_data
 
 # Usuário 
 
@@ -15,7 +18,7 @@ class UserLoginView(LoginView):
     template_name = "login.html"
     authentication_form = LoginForm
     redirect_authenticated_user = True # evita que usuários logados vejam o login novamente
-    next_page = reverse_lazy("portfolio-create")  # Redireciona para criar portfólio após login
+    next_page = reverse_lazy("dashboard")  # Redireciona para dashboard após login
 
 class UserLogoutView(LogoutView):
     next_page = reverse_lazy("login")
@@ -41,20 +44,47 @@ class UserCreateAPIView(generics.CreateAPIView):
     serializer_class = UserSerializer
 
 
-# Portfolio 
+class GetTokenView(generics.GenericAPIView):
+    authentication_classes = [SessionAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
 
-class PortfolioCreateView(generics.CreateAPIView):
+    def get(self, request):
+        """Retorna tokens JWT para o usuário logado"""
+        user = request.user
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+        })
+
+
+# Portfolio
+
+class PortfolioListCreateView(generics.ListCreateAPIView):
+    """
+    GET  /portfolios/         - Listar portfólios do usuário
+    POST /portfolios/         - Criar novo portfólio
+    Body (POST): {"name": "Meu Portfólio"}
+    """
     serializer_class = PortfolioSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return self.request.user.portfolios.all()
+
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
 
 
-class UserPortfolioListView(generics.ListAPIView):
+class PortfolioDestroyView(generics.DestroyAPIView):
+    """
+    DELETE /portfolios/<id>/  - Deletar um portfólio
+    """
     serializer_class = PortfolioSerializer
     permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'id'
 
     def get_queryset(self):
         return self.request.user.portfolios.all()
@@ -75,23 +105,11 @@ class PortfolioDetailView(LoginRequiredMixin, TemplateView):
 
 # Assets
 
-class AssetCreateView(generics.CreateAPIView):
+class PortfolioAssetListCreateView(generics.ListCreateAPIView):
     """
-    Criar um novo asset em um portfólio.
-    Valida com a BRAPI API automaticamente.
-    """
-    serializer_class = AssetSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        context['request'] = self.request
-        return context
-
-
-class PortfolioAssetListView(generics.ListAPIView):
-    """
-    Listar todos os assets de um portfólio específico.
+    GET  /portfolios/<portfolio_id>/assets/         - Listar assets
+    POST /portfolios/<portfolio_id>/assets/         - Criar novo asset
+    Body (POST): {"ticker": "PETR4", "quantity": 100, "purchase_price": 25.50}
     """
     serializer_class = AssetSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -99,16 +117,22 @@ class PortfolioAssetListView(generics.ListAPIView):
     def get_queryset(self):
         portfolio_id = self.kwargs.get('portfolio_id')
         user = self.request.user
-        
-        # Garantir que o portfólio pertence ao usuário
         return Asset.objects.filter(
             portfolio__id=portfolio_id,
             portfolio__user=user
         )
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        context['portfolio_id'] = self.kwargs.get('portfolio_id')
+        return context
+
 
 class AssetDeleteView(generics.DestroyAPIView):
-    """Deletar um asset específico"""
+    """
+    DELETE /assets/<id>/     - Deletar um asset
+    """
     serializer_class = AssetSerializer
     permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'id'
@@ -116,3 +140,25 @@ class AssetDeleteView(generics.DestroyAPIView):
     def get_queryset(self):
         user = self.request.user
         return Asset.objects.filter(portfolio__user=user)
+
+
+class AssetDetailsView(generics.GenericAPIView):
+    """
+    GET /assets/details/<ticker>/  - Pegar dados da BRAPI para um ticker
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, ticker):
+        try:
+            data = fetch_brapi_data(ticker)
+            return Response(data)
+        except ValueError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Portfólio — Moneta{% endblock %}
+
+{% block content %}
+<style>
+    .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        max-width: 1000px;
+        margin: 40px auto 0;
+        padding: 0 24px;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: #a0a0a0;
+        font-size: .85rem;
+        font-weight: 600;
+        text-decoration: none;
+        margin-bottom: 8px;
+        transition: color .15s;
+    }
+
+    .back-link:hover {
+        color: #3b5bdb;
+    }
+
+    .page-header h1 {
+        font-size: 1.55rem;
+        font-weight: 800;
+        letter-spacing: -.5px;
+        margin: 10px 0 4px;
+    }
+
+    .page-header p {
+        color: #a0a0a0;
+        font-size: .85rem;
+    }
+
+    .container {
+        max-width: 1000px;
+        margin: 24px auto 52px;
+        padding: 0 24px;
+    }
+
+    /* SUMMARY */
+    .portfolio-summary {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .summary-card {
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, .05);
+        padding: 20px 26px;
+    }
+
+    .summary-label {
+        font-size: .73rem;
+        font-weight: 700;
+        color: #b0b0b0;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        margin-bottom: 6px;
+    }
+
+    .summary-value {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #1a1a1a;
+        letter-spacing: -.5px;
+    }
+
+    /* TABLE */
+    .table-card {
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 2px 20px rgba(0, 0, 0, .07);
+        overflow: hidden;
+    }
+
+    .table-wrap {
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: .9rem;
+    }
+
+    th {
+        background: #f8fafc;
+        text-align: left;
+        padding: 13px 20px;
+        font-weight: 700;
+        color: #b0b0b0;
+        border-bottom: 1.5px solid #f0f2f5;
+        font-size: .73rem;
+        text-transform: uppercase;
+        letter-spacing: .6px;
+    }
+
+    td {
+        padding: 15px 20px;
+        border-bottom: 1px solid #f5f5f5;
+        vertical-align: middle;
+    }
+
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    tr:hover td {
+        background: #fafbff;
+    }
+
+    .ticker-badge {
+        display: inline-block;
+        background: #e8eeff;
+        color: #3b5bdb;
+        padding: 4px 11px;
+        border-radius: 8px;
+        font-size: .82rem;
+        font-weight: 800;
+        letter-spacing: .3px;
+    }
+
+    .btn-delete {
+        background: none;
+        border: 1.5px solid #fee2e2;
+        border-radius: 8px;
+        color: #ef4444;
+        font-size: .8rem;
+        font-weight: 700;
+        font-family: 'DM Sans', sans-serif;
+        padding: 5px 12px;
+        cursor: pointer;
+        transition: background .15s;
+    }
+
+    .btn-delete:hover {
+        background: #fee2e2;
+    }
+
+    /* MODAL */
+    .modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, .3);
+        backdrop-filter: blur(3px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-content {
+        background: #fff;
+        border-radius: 20px;
+        padding: 40px 38px;
+        width: 100%;
+        max-width: 420px;
+        box-shadow: 0 8px 48px rgba(0, 0, 0, .14);
+        position: relative;
+        animation: slideUp .2s ease;
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .modal-content h2 {
+        font-size: 1.3rem;
+        font-weight: 800;
+        margin-bottom: 6px;
+        letter-spacing: -.4px;
+    }
+
+    .modal-subtitle {
+        font-size: .83rem;
+        color: #a0a0a0;
+        margin-bottom: 22px;
+    }
+
+    .close {
+        position: absolute;
+        top: 16px;
+        right: 20px;
+        font-size: 1.4rem;
+        cursor: pointer;
+        color: #c0c0c0;
+        background: none;
+        border: none;
+        line-height: 1;
+        transition: color .15s;
+    }
+
+    .close:hover {
+        color: #1a1a1a;
+    }
+
+    .field-hint {
+        font-size: .78rem;
+        color: #b0b0b0;
+        margin-top: 4px;
+    }
+
+    .notification {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        padding: 13px 20px;
+        border-radius: 12px;
+        font-size: .88rem;
+        font-weight: 600;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, .12);
+        z-index: 2000;
+        animation: fadeIn .2s ease;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .notification.error {
+        background: #fee2e2;
+        color: #b91c1c;
+        border: 1px solid #fca5a5;
+    }
+
+    .notification.success {
+        background: #dcfce7;
+        color: #166534;
+        border: 1px solid #86efac;
+    }
+</style>
+
+<div class="page-header">
+    <div>
+        <a href="{% url 'dashboard' %}" class="back-link">← Voltar</a>
+        <h1 id="portfolio-name">Carregando...</h1>
+        <p id="portfolio-created">Criado em: --</p>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="openAddAssetModal()">+ Adicionar Asset</button>
+</div>
+
+<div class="container">
+
+    <div class="portfolio-summary">
+        <div class="summary-card">
+            <p class="summary-label">Total de Assets</p>
+            <p class="summary-value" id="asset-count">0</p>
+        </div>
+    </div>
+
+    <div class="table-card">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ticker</th>
+                        <th>Quantidade</th>
+                        <th>Preço de Compra</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="assets-tbody">
+                    <tr>
+                        <td colspan="4" style="text-align:center;padding:40px;color:#b0b0b0;">
+                            Carregando assets...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal: Adicionar Asset -->
+<div id="addAssetModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeAddAssetModal()">&times;</span>
+        <h2>Adicionar Asset</h2>
+        <p class="modal-subtitle">O ticker será validado com a API BRAPI</p>
+        <form onsubmit="handleAddAsset(event)">
+            <div class="form-group">
+                <label for="asset-ticker">Ticker</label>
+                <input type="text" id="asset-ticker" name="ticker" placeholder="Ex: PETR4, ITUB4, VALE3" required
+                    style="text-transform:uppercase;">
+                <p class="field-hint">Ações, FIIs, ETFs — ex: PETR4, ITUB4, VALE3</p>
+            </div>
+            <div class="form-group">
+                <label for="asset-quantity">Quantidade</label>
+                <input type="number" id="asset-quantity" name="quantity" step="0.01" min="0" placeholder="100" required>
+            </div>
+            <div class="form-group">
+                <label for="asset-price">Preço de Compra (R$)</label>
+                <input type="number" id="asset-price" name="purchase_price" step="0.01" min="0" placeholder="25.50"
+                    required>
+            </div>
+            <button type="submit" class="btn btn-primary">Adicionar Asset</button>
+            <button type="button" class="btn btn-outline" onclick="closeAddAssetModal()"
+                style="margin-top:8px;">Cancelar</button>
+        </form>
+    </div>
+</div>
+<!-- Modal Detalhes do Asset -->
+<div id="assetDetailsModal" class="modal" onclick="if(event.target.id==='assetDetailsModal') closeAssetDetailsModal()">
+    <div class="modal-content">
+        <button class="close" onclick="closeAssetDetailsModal()">✕</button>
+        <div id="assetDetailsContent"></div>
+    </div>
+</div>
+<script src="{% static 'js/api.js' %}"></script>
+<script src="{% static 'js/portfolio_detail.js' %}"></script>
+{% endblock %}

@@ -19,10 +19,13 @@
     <nav>
         <span class="logo-wordmark">mo<span class="dot">.</span>neta</span>
         {% if request.user.is_authenticated %}
-        <form method="post" action="{% url 'logout' %}" style="margin-left:auto; display:inline;">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-outline btn-sm" style="margin:0;">Sair</button>
-        </form>
+        <div style="margin-left:auto; display:flex; align-items:center; gap:16px;">
+            <span style="font-size:.9rem; color:#a0a0a0;">{{ request.user.username }}</span>
+            <form method="post" action="{% url 'logout' %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline btn-sm" style="margin:0;">Sair</button>
+            </form>
+        </div>
         {% endif %}
     </nav>
 

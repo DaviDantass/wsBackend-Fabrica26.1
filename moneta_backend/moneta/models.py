@@ -10,7 +10,7 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.username} - {self.email}"
 
-# CARTEIRA de investimentos do usuário, pode ter vários assets(açoes, fundos, etc)
+# Carteira de investimentos do usuário, pode ter vários assets(açoes, fundos, etc)
 class Portfolio(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="portfolios") # cascade pois se deletar o usuário, tb deleta os portfólios dele
     name = models.CharField(max_length=100)

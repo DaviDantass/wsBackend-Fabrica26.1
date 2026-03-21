@@ -46,20 +46,22 @@ class PortfolioSerializer(serializers.ModelSerializer):
 class AssetSerializer(serializers.ModelSerializer):
     """
     Serializer para criar assets em um portfólio.
-    Puxa dados da BRAPI API automaticamente.
+    Portfolio_id vem do URL, não do body.
     """
-    portfolio_id = serializers.IntegerField(write_only=True)  # ID do portfólio
-    ticker = serializers.CharField(write_only=True)
 
     class Meta:
         model = Asset
-        fields = ['id', 'ticker', 'quantity', 'purchase_price', 'portfolio_id']
+        fields = ['id', 'ticker', 'quantity', 'purchase_price']
         read_only_fields = ['id']
 
     def validate(self, attrs):
-        """Validar que o portfólio pertence ao usuário logado"""
-        portfolio_id = attrs.get('portfolio_id')
+        portfolio_id = self.context.get('portfolio_id')
         user = self.context['request'].user
+        
+        if not portfolio_id:
+            raise serializers.ValidationError(
+                {"portfolio_id": "Portfolio ID não fornecido."}
+            )
         
         try:
             portfolio = Portfolio.objects.get(id=portfolio_id, user=user)
@@ -72,9 +74,6 @@ class AssetSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        """
-        Criar asset puxando dados da BRAPI e validando.
-        """
         ticker = validated_data.pop('ticker').upper().strip()
         portfolio = validated_data.pop('portfolio')
         
@@ -83,7 +82,6 @@ class AssetSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"ticker": f"Asset '{ticker}' já existe neste portfólio."}
             )
-        
         # Puxar dados da BRAPI
         try:
             brapi_data = fetch_brapi_data(ticker)
@@ -92,7 +90,6 @@ class AssetSerializer(serializers.ModelSerializer):
                 {"ticker": f"Erro ao buscar dados da BRAPI: {str(e)}"}
             )
         
-        # Criar asset com dados da BRAPI
         asset = Asset.objects.create(
             portfolio=portfolio,
             ticker=ticker,
