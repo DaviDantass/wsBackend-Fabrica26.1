@@ -78,12 +78,13 @@
         border-radius: 16px;
         box-shadow: 0 2px 16px rgba(0, 0, 0, .06);
         padding: 26px 24px;
-        cursor: pointer;
         text-decoration: none;
         color: inherit;
         border: 1.5px solid transparent;
         transition: border-color .18s, box-shadow .18s, transform .12s;
-        display: block;
+        display: flex;
+        align-items: stretch;
+        gap: 12px;
     }
 
     .portfolio-card:hover {
@@ -142,6 +143,35 @@
         color: #3b5bdb !important;
         font-weight: 700;
         font-size: .88rem;
+    }
+
+    .portfolio-card-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding-left: 12px;
+        border-left: 1px solid #f0f0f0;
+    }
+
+    .btn-icon {
+        background: none;
+        border: none;
+        font-size: 1.2rem;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 6px;
+        transition: background-color .2s, color .2s;
+        color: #999;
+    }
+
+    .btn-icon:hover {
+        background-color: #f5f5f5;
+        color: #666;
+    }
+
+    .btn-icon.btn-delete:hover {
+        background-color: #fee2e2;
+        color: #dc2626;
     }
 
     .empty-state {
@@ -366,6 +396,23 @@
             </div>
             <button type="submit" class="btn btn-primary">Criar portfólio</button>
             <button type="button" class="btn btn-outline" onclick="closeCreatePortfolioModal()"
+                style="margin-top:8px;">Cancelar</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Renomear Portfólio -->
+<div id="renamePortfolioModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeRenamePortfolioModal()">&times;</span>
+        <h2>Renomear Portfólio</h2>
+        <form onsubmit="handleRenamePortfolio(event)">
+            <div class="form-group">
+                <label for="rename-portfolio-input">Novo nome</label>
+                <input type="text" id="rename-portfolio-input" name="name" placeholder="Ex: Portfólio 2024" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Atualizar</button>
+            <button type="button" class="btn btn-outline" onclick="closeRenamePortfolioModal()"
                 style="margin-top:8px;">Cancelar</button>
         </form>
     </div>

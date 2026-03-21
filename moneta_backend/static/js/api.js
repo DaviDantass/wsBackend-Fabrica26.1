@@ -120,6 +120,12 @@ async function createPortfolio(name) {
     });
 }
 
+async function updatePortfolioName(portfolioId, newName) {
+    return await apiRequest(`portfolios/${portfolioId}/`, 'PATCH', {
+        name: newName,
+    });
+}
+
 async function deletePortfolio(portfolioId) {
     return await apiRequest(`portfolios/${portfolioId}/`, 'DELETE');
 }

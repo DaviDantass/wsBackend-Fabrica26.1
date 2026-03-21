@@ -106,19 +106,25 @@ function renderPortfolios() {
         const initials = p.name.trim().substring(0, 2).toUpperCase();
         const date = new Date(p.created_at).toLocaleDateString('pt-BR');
         return `
-      <a class="portfolio-card" href="/portfolio/?id=${p.id}">
-        <div class="portfolio-card-header">
-          <div class="portfolio-icon">${initials}</div>
-          <div>
-            <p class="portfolio-card-name">${p.name}</p>
-            <p class="portfolio-card-date">Criado em ${date}</p>
+      <div class="portfolio-card">
+        <a href="/portfolio/?id=${p.id}" style="flex: 1; text-decoration: none; color: inherit;">
+          <div class="portfolio-card-header">
+            <div class="portfolio-icon">${initials}</div>
+            <div>
+              <p class="portfolio-card-name">${p.name}</p>
+              <p class="portfolio-card-date">Criado em ${date}</p>
+            </div>
           </div>
+          <div class="portfolio-card-footer">
+            <span>Ver detalhes</span>
+            <span class="portfolio-card-arrow">→</span>
+          </div>
+        </a>
+        <div class="portfolio-card-actions">
+          <button class="btn-icon" onclick="openRenamePortfolioModal(${p.id}, '${p.name.replace(/'/g, "\\'")}')" title="Renomear">✏️</button>
+          <button class="btn-icon btn-delete" onclick="confirmDeletePortfolio(${p.id}, '${p.name.replace(/'/g, "\\'")}')" title="Deletar">🗑️</button>
         </div>
-        <div class="portfolio-card-footer">
-          <span>Ver detalhes</span>
-          <span class="portfolio-card-arrow">→</span>
-        </div>
-      </a>`;
+      </div>`;
     }).join('');
 }
 
@@ -170,6 +176,89 @@ async function handleCreatePortfolio(event) {
     } catch (err) {
         console.error('[CREATE] Erro:', err.message);
         showNotification('Erro ao criar portfólio: ' + err.message, 'error');
+    }
+}
+
+/**
+ * RENAME PORTFOLIO
+ */
+let renamePortfolioId = null;
+
+function openRenamePortfolioModal(portfolioId, currentName) {
+    console.log('[RENAME] Abrindo modal para portfolio ID:', portfolioId);
+    renamePortfolioId = portfolioId;
+    document.getElementById('rename-portfolio-input').value = currentName;
+    const modal = document.getElementById('renamePortfolioModal');
+    modal.style.display = 'flex';
+    modal.classList.add('show');
+    setTimeout(() => document.getElementById('rename-portfolio-input').focus(), 50);
+}
+
+function closeRenamePortfolioModal() {
+    console.log('[RENAME] Fechando modal');
+    const modal = document.getElementById('renamePortfolioModal');
+    modal.style.display = 'none';
+    modal.classList.remove('show');
+    document.getElementById('rename-portfolio-input').value = '';
+    renamePortfolioId = null;
+}
+
+async function handleRenamePortfolio(event) {
+    event.preventDefault();
+    console.log('[RENAME] Iniciando renomeação de portfolio ID:', renamePortfolioId);
+
+    const newName = document.getElementById('rename-portfolio-input').value.trim();
+    if (!newName) {
+        return showNotification('Nome obrigatório', 'error');
+    }
+
+    try {
+        console.log('[RENAME] Chamando PATCH /portfolios/' + renamePortfolioId);
+        const updated = await updatePortfolioName(renamePortfolioId, newName);
+        console.log('[RENAME] Portfolio renomeado:', updated);
+
+        // Atualizar na lista local
+        const idx = portfolios.findIndex(p => p.id === renamePortfolioId);
+        if (idx >= 0) {
+            portfolios[idx] = updated;
+        }
+
+        renderPortfolios();
+        closeRenamePortfolioModal();
+        showNotification('Portfólio renomeado com sucesso!', 'success');
+    } catch (err) {
+        console.error('[RENAME] Erro:', err.message);
+        showNotification('Erro ao renomear: ' + err.message, 'error');
+    }
+}
+
+/**
+ * DELETE PORTFOLIO
+ */
+function confirmDeletePortfolio(portfolioId, portfolioName) {
+    console.log('[DELETE] Confirmando deleção de portfolio ID:', portfolioId);
+
+    if (confirm(`Tem certeza que deseja deletar o portfólio "${portfolioName}"? Esta ação não pode ser desfeita.`)) {
+        handleDeletePortfolio(portfolioId);
+    }
+}
+
+async function handleDeletePortfolio(portfolioId) {
+    console.log('[DELETE] Deletando portfolio ID:', portfolioId);
+    try {
+        console.log('[DELETE] Chamando DELETE /portfolios/' + portfolioId);
+        await deletePortfolio(portfolioId);
+        console.log('[DELETE] Portfolio deletado com sucesso');
+
+        // Remover da lista local
+        portfolios = portfolios.filter(p => p.id !== portfolioId);
+
+        renderPortfolios();
+        updateCount();
+        showNotification('Portfólio deletado com sucesso!', 'success');
+    } catch (err) {
+        console.error('[DELETE] Erro:', err.message);
+        showNotification('Erro ao deletar: ' + err.message, 'error');
     }
 }
 
