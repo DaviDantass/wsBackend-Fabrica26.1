@@ -287,8 +287,6 @@
                     <tr>
                         <th>Ticker</th>
                         <th>Empresa</th>
-                        <th>Setor</th>
-                        <th>Preço Atual</th>
                         <th>Quantidade</th>
                         <th>Preço de Compra</th>
                         <th>Ações</th>
@@ -296,7 +294,7 @@
                 </thead>
                 <tbody id="assets-tbody">
                     <tr>
-                        <td colspan="4" style="text-align:center;padding:40px;color:#b0b0b0;">
+                        <td colspan="5" style="text-align:center;padding:40px;color:#b0b0b0;">
                             Carregando assets...
                         </td>
                     </tr>
@@ -323,12 +321,7 @@
             </div>
             <div class="form-group">
                 <label for="asset-quantity">Quantidade</label>
-                <input type="number" id="asset-quantity" name="quantity" step="0.01" min="0" placeholder="100" required>
-            </div>
-            <div class="form-group">
-                <label for="asset-price">Preço de Compra (R$)</label>
-                <input type="number" id="asset-price" name="purchase_price" step="0.01" min="0" placeholder="25.50"
-                    required>
+                <input type="number" id="asset-quantity" name="quantity" step="1" min="1" placeholder="100" required>
             </div>
             <button type="submit" class="btn btn-primary">Adicionar Asset</button>
             <button type="button" class="btn btn-outline" onclick="closeAddAssetModal()"

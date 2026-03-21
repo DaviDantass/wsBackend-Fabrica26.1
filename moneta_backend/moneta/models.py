@@ -22,8 +22,8 @@ class Portfolio(models.Model):
 class Asset(models.Model):
     portfolio = models.ForeignKey(Portfolio, on_delete=models.CASCADE, related_name="assets")
     ticker = models.CharField(max_length=10)
-    quantity = models.DecimalField(max_digits=12, decimal_places=2)
-    purchase_price = models.DecimalField(max_digits=12, decimal_places=2)
+    quantity = models.IntegerField()  # Quantidade em número inteiro
+    purchase_price = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)  # Obtido automaticamente da BRAPI
     
     # Dados da BRAPI (sincronizados no cadastro)
     company_name = models.CharField(max_length=200, blank=True, null=True)  # ex: Petrobras

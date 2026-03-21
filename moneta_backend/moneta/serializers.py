@@ -70,7 +70,9 @@ class AssetSerializer(serializers.ModelSerializer):
     Serializer para criar assets em um portfólio.
     Portfolio_id vem do URL, não do body.
     Sincroniza dados da BRAPI automaticamente no cadastro.
+    Preço de compra é preenchido automaticamente com o preço atual da BRAPI.
     """
+    purchase_price = serializers.DecimalField(max_digits=12, decimal_places=2, required=False, allow_null=True)
 
     class Meta:
         model = Asset
@@ -118,17 +120,33 @@ class AssetSerializer(serializers.ModelSerializer):
             )
         
         # Extrair dados relevantes da BRAPI
+        # Tenta múltiplos nomes de campo pois BRAPI pode retornar de formas diferentes
+        current_price = (
+            brapi_data.get('regularMarketPrice') or 
+            brapi_data.get('price') or 
+            None
+        )
+        
+        if not current_price:
+            raise serializers.ValidationError(
+                {"ticker": f"Não foi possível obter preço para '{ticker}'. Tente novamente."}
+            )
+        
         asset_data = {
             'portfolio': portfolio,
             'ticker': ticker,
             **validated_data,
             'company_name': brapi_data.get('longName') or brapi_data.get('shortName'),
             'sector': brapi_data.get('sector'),
-            'current_price': brapi_data.get('price'),
-            'price_change_percent': brapi_data.get('changePercent'),
+            'current_price': current_price,
+            'price_change_percent': brapi_data.get('change') or brapi_data.get('changePercent'),
             'market_cap': brapi_data.get('marketCap'),
             'dividend_yield': brapi_data.get('dividendYield'),
         }
+        
+        # Se purchase_price não foi fornecido, usa o preço atual da BRAPI
+        if 'purchase_price' not in validated_data or validated_data.get('purchase_price') is None:
+            asset_data['purchase_price'] = current_price
         
         asset = Asset.objects.create(**asset_data)
         return asset

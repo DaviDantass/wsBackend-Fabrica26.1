@@ -137,11 +137,10 @@ async function getAssets(portfolioId) {
     return await apiRequest(`portfolios/${portfolioId}/assets/`);
 }
 
-async function createAsset(portfolioId, ticker, quantity, purchasePrice) {
+async function createAsset(portfolioId, ticker, quantity) {
     return await apiRequest(`portfolios/${portfolioId}/assets/`, 'POST', {
         ticker: ticker.toUpperCase(),
         quantity: parseFloat(quantity),
-        purchase_price: parseFloat(purchasePrice),
     });
 }
 

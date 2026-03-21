@@ -115,7 +115,7 @@ function renderAssets() {
     if (currentAssets.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" style="text-align:center;padding:48px;color:#c0c0c0;">
+                <td colspan="5" style="text-align:center;padding:48px;color:#c0c0c0;">
                     Nenhum asset adicionado ainda
                 </td>
             </tr>`;
@@ -123,19 +123,10 @@ function renderAssets() {
     }
 
     tbody.innerHTML = currentAssets.map(asset => {
-        const priceChange = asset.price_change_percent ? parseFloat(asset.price_change_percent) : 0;
-        const changeColor = priceChange >= 0 ? '#2fe878' : '#ff3c3c';
         return `
         <tr>
             <td><span class="ticker-badge ticker-clickable" onclick="openAssetDetailsModal('${asset.ticker}')" style="cursor:pointer;">${asset.ticker}</span></td>
             <td>${asset.company_name || '-'}</td>
-            <td>${asset.sector || '-'}</td>
-            <td>
-                <div style="display:flex;align-items:center;gap:6px;">
-                    <span>R$ ${asset.current_price ? parseFloat(asset.current_price).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '-'}</span>
-                    <span style="color:${changeColor};font-size:.85rem;font-weight:600;">${priceChange >= 0 ? '+' : ''}${priceChange.toFixed(2)}%</span>
-                </div>
-            </td>
             <td>${parseFloat(asset.quantity).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
             <td>R$ ${parseFloat(asset.purchase_price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
             <td>
@@ -157,7 +148,6 @@ function closeAddAssetModal() {
     document.getElementById('addAssetModal').style.display = 'none';
     document.getElementById('asset-ticker').value = '';
     document.getElementById('asset-quantity').value = '';
-    document.getElementById('asset-price').value = '';
 }
 
 async function handleAddAsset(event) {
@@ -165,23 +155,22 @@ async function handleAddAsset(event) {
 
     const ticker = document.getElementById('asset-ticker').value.trim().toUpperCase();
     const quantity = document.getElementById('asset-quantity').value;
-    const price = document.getElementById('asset-price').value;
 
-    console.log('[Asset] Adicionando:', { ticker, quantity, price, portfolioId });
+    console.log('[Asset] Adicionando:', { ticker, quantity, portfolioId });
 
-    if (!ticker || !quantity || !price) {
-        return showNotification('Todos os campos são obrigatórios', 'error');
+    if (!ticker || !quantity) {
+        return showNotification('Ticker e quantidade são obrigatórios', 'error');
     }
 
     try {
         console.log('[Asset] Enviando para API...');
-        const novo = await createAsset(portfolioId, ticker, quantity, price);
-        console.log('[Asset] Respostada API:', novo);
+        const novo = await createAsset(portfolioId, ticker, quantity);
+        console.log('[Asset] Resposta da API:', novo);
 
         currentAssets.push(novo);
         renderAssets();
         closeAddAssetModal();
-        showNotification(`${ticker} adicionado com sucesso! Dados da BRAPI sincronizados.`, 'success');
+        showNotification(`${ticker} adicionado com sucesso! Preço atualizado da BRAPI.`, 'success');
     } catch (err) {
         console.error('[Asset] Erro:', err);
         showNotification('Erro ao adicionar asset: ' + err.message, 'error');
