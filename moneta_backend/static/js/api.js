@@ -5,13 +5,21 @@
 
 const API_BASE_URL = '/';
 let ACCESS_TOKEN = localStorage.getItem('access_token') || null;
+let LAST_ERROR = null;
+
+console.log('[INIT] API Client carregado. ACCESS_TOKEN:', !!ACCESS_TOKEN);
 
 /**
  * Helper para fazer requests com auth
  */
 async function apiRequest(endpoint, method = 'GET', data = null) {
+    console.log(`[API] Iniciando ${method} ${endpoint}. Token existe?`, !!ACCESS_TOKEN);
+
     if (!ACCESS_TOKEN) {
-        throw new Error('Sem token. Faça login novamente.');
+        const error = 'Sem token de autenticação. Faça login novamente.';
+        console.error('[API]', error);
+        LAST_ERROR = error;
+        throw new Error(error);
     }
 
     const headers = {
@@ -29,30 +37,54 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+        const url = `${API_BASE_URL}${endpoint}`;
+        console.log(`[API] ${method} ${url}`, data || '');
+
+        const response = await fetch(url, options);
+        console.log(`[API] Resposta recebida: ${response.status} ${response.statusText}`);
 
         if (response.status === 401) {
+            const error = 'Unauthorized - Token expirado';
+            console.error('[API]', error);
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
             ACCESS_TOKEN = null;
+            LAST_ERROR = error;
             window.location.href = '/';
             return null;
         }
 
+        let responseData = null;
+        try {
+            responseData = await response.json();
+        } catch (e) {
+            console.warn('[API] Resposta não é JSON:', response.status);
+        }
+
         if (!response.ok) {
-            const errorData = await response.json();
-            const errorMessage = errorData.error || errorData.detail || JSON.stringify(errorData);
+            const errorMessage = responseData?.error ||
+                responseData?.detail ||
+                responseData?.message ||
+                Object.values(responseData || {}).flat().join(', ') ||
+                `HTTP ${response.status}: ${response.statusText}`;
+
+            console.error(`[API] Erro ${response.status}:`, errorMessage);
+            LAST_ERROR = errorMessage;
             throw new Error(errorMessage);
         }
 
         // 204 No Content - sem corpo de resposta
         if (response.status === 204) {
+            console.log('[API] OK - 204 No Content');
             return null;
         }
 
-        return await response.json();
+        console.log('[API] OK', responseData);
+        LAST_ERROR = null;
+        return responseData;
     } catch (error) {
-        console.error('API Error:', error);
+        console.error('[API] Erro na requisição:', error.message);
+        LAST_ERROR = error.message;
         throw error;
     }
 }
@@ -122,3 +154,21 @@ async function getAssetDetails(ticker) {
         throw error;
     }
 }
+
+/**
+ * DEBUG - Para diagnóstico
+ */
+function debugMoneta() {
+    return {
+        hasToken: !!ACCESS_TOKEN,
+        token: ACCESS_TOKEN ? ACCESS_TOKEN.substring(0, 20) + '...' : null,
+        lastError: LAST_ERROR,
+        localStorage: {
+            access_token: !!localStorage.getItem('access_token'),
+            refresh_token: !!localStorage.getItem('refresh_token'),
+        },
+        timestamp: new Date().toISOString(),
+    };
+}
+
+console.log('[INIT] Use debugMoneta() para diagnosticar problemas');

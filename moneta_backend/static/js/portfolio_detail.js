@@ -115,16 +115,27 @@ function renderAssets() {
     if (currentAssets.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="4" style="text-align:center;padding:48px;color:#c0c0c0;">
+                <td colspan="7" style="text-align:center;padding:48px;color:#c0c0c0;">
                     Nenhum asset adicionado ainda
                 </td>
             </tr>`;
         return;
     }
 
-    tbody.innerHTML = currentAssets.map(asset => `
+    tbody.innerHTML = currentAssets.map(asset => {
+        const priceChange = asset.price_change_percent ? parseFloat(asset.price_change_percent) : 0;
+        const changeColor = priceChange >= 0 ? '#2fe878' : '#ff3c3c';
+        return `
         <tr>
             <td><span class="ticker-badge ticker-clickable" onclick="openAssetDetailsModal('${asset.ticker}')" style="cursor:pointer;">${asset.ticker}</span></td>
+            <td>${asset.company_name || '-'}</td>
+            <td>${asset.sector || '-'}</td>
+            <td>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <span>R$ ${asset.current_price ? parseFloat(asset.current_price).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '-'}</span>
+                    <span style="color:${changeColor};font-size:.85rem;font-weight:600;">${priceChange >= 0 ? '+' : ''}${priceChange.toFixed(2)}%</span>
+                </div>
+            </td>
             <td>${parseFloat(asset.quantity).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
             <td>R$ ${parseFloat(asset.purchase_price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
             <td>
@@ -133,7 +144,8 @@ function renderAssets() {
                 </button>
             </td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
 }
 
 function openAddAssetModal() {
@@ -169,12 +181,54 @@ async function handleAddAsset(event) {
         currentAssets.push(novo);
         renderAssets();
         closeAddAssetModal();
-        showNotification(`${ticker} adicionado com sucesso!`, 'success');
+        showNotification(`${ticker} adicionado com sucesso! Dados da BRAPI sincronizados.`, 'success');
     } catch (err) {
         console.error('[Asset] Erro:', err);
         showNotification('Erro ao adicionar asset: ' + err.message, 'error');
     }
 }
+
+// Preview em tempo real dos dados do ticker
+let previewTimeout;
+document.addEventListener('DOMContentLoaded', () => {
+    const tickerInput = document.getElementById('asset-ticker');
+    if (tickerInput) {
+        tickerInput.addEventListener('input', () => {
+            clearTimeout(previewTimeout);
+            const previewDiv = document.getElementById('ticker-preview');
+            const ticker = tickerInput.value.trim().toUpperCase();
+
+            if (!ticker || ticker.length < 4) {
+                if (previewDiv) previewDiv.style.display = 'none';
+                return;
+            }
+
+            previewTimeout = setTimeout(async () => {
+                try {
+                    const data = await getAssetDetails(ticker);
+                    if (data && !data.error) {
+                        const preview = `
+                            <div style="background:#f0f8ff;border-left:4px solid #3b5bdb;padding:12px;border-radius:6px;margin-top:8px;">
+                                <p style="margin:0;font-size:.75rem;color:#666;font-weight:600;">DADOS DA BRAPI</p>
+                                <p style="margin:4px 0;font-weight:600;color:#1a1a1a;">${data.longName || data.shortName || ticker}</p>
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;font-size:.8rem;">
+                                    <div><span style="color:#888;">Setor:</span> ${data.sector || '-'}</div>
+                                    <div><span style="color:#888;">Preço:</span> R$ ${data.price?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '-'}</div>
+                                </div>
+                            </div>
+                        `;
+                        if (previewDiv) {
+                            previewDiv.innerHTML = preview;
+                            previewDiv.style.display = 'block';
+                        }
+                    }
+                } catch (err) {
+                    console.log('Preview não disponível:', err);
+                }
+            }, 500);
+        });
+    }
+});
 
 async function confirmDeleteAsset(assetId, ticker) {
     if (!confirm(`Excluir ${ticker} do portfólio?`)) return;

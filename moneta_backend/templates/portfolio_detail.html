@@ -286,6 +286,9 @@
                 <thead>
                     <tr>
                         <th>Ticker</th>
+                        <th>Empresa</th>
+                        <th>Setor</th>
+                        <th>Preço Atual</th>
                         <th>Quantidade</th>
                         <th>Preço de Compra</th>
                         <th>Ações</th>
@@ -316,6 +319,7 @@
                 <input type="text" id="asset-ticker" name="ticker" placeholder="Ex: PETR4, ITUB4, VALE3" required
                     style="text-transform:uppercase;">
                 <p class="field-hint">Ações, FIIs, ETFs — ex: PETR4, ITUB4, VALE3</p>
+                <div id="ticker-preview" style="display:none;"></div>
             </div>
             <div class="form-group">
                 <label for="asset-quantity">Quantidade</label>

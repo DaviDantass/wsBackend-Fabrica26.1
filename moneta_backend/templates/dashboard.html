@@ -4,6 +4,42 @@
 
 {% block content %}
 <style>
+    .debug-panel {
+        position: fixed;
+        bottom: 24px;
+        left: 24px;
+        background: #f0f0f0;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 0.75rem;
+        font-family: monospace;
+        max-width: 300px;
+        z-index: 999;
+        max-height: 200px;
+        overflow-y: auto;
+        display: none;
+    }
+
+    .debug-panel.show {
+        display: block;
+    }
+
+    .debug-panel-toggle {
+        position: fixed;
+        bottom: 24px;
+        left: 24px;
+        background: #3b5bdb;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        cursor: pointer;
+        font-size: 1.2rem;
+        z-index: 998;
+    }
+
     .page-header {
         display: flex;
         align-items: center;
@@ -344,6 +380,36 @@
     </div>
 </div>
 
+<!-- Debug Panel -->
+<button class="debug-panel-toggle" onclick="toggleDebugPanel()" title="Modo Debug">🔧</button>
+<div id="debugPanel" class="debug-panel">
+    <div><strong>Debug Moneta</strong></div>
+    <div id="debugContent">Carregando...</div>
+</div>
+
 <script src="{% static 'js/api.js' %}"></script>
 <script src="{% static 'js/dashboard.js' %}"></script>
+<script>
+    function toggleDebugPanel() {
+        const panel = document.getElementById('debugPanel');
+        panel.classList.toggle('show');
+        if (panel.classList.contains('show')) {
+            updateDebugPanel();
+        }
+    }
+
+    function updateDebugPanel() {
+        const debug = typeof debugMoneta === 'function' ? debugMoneta() : {};
+        document.getElementById('debugContent').innerHTML = `
+        <div><strong>Token:</strong> ${debug.hasToken ? '✓ Sim' : '✗ Não'}</div>
+        <div><strong>Token prévia:</strong> ${debug.token || 'nulo'}</div>
+        <div><strong>localStorage:</strong> access=${debug.localStorage?.access_token ? '✓' : '✗'}, refresh=${debug.localStorage?.refresh_token ? '✓' : '✗'}</div>
+        <div><strong>Último erro:</strong> ${debug.lastError || 'nenhum'}</div>
+        <div style="margin-top: 8px; font-size: 0.7rem; color: #666;">
+            Dica: Veja o console (F12) para logs detalhados com tags [API], [DASHBOARD], [CREATE]
+        </div>
+    `;
+        setTimeout(updateDebugPanel, 2000); // Atualiza a cada 2s
+    }
+</script>
 {% endblock %}

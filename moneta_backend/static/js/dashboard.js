@@ -9,10 +9,16 @@ document.addEventListener('DOMContentLoaded', initDashboard);
 
 async function initDashboard() {
     try {
+        console.log('[DASHBOARD] Iniciando dashboard...');
+        console.log('[DASHBOARD] ACCESS_TOKEN existe?', !!ACCESS_TOKEN);
+
         // Se não tem token e ainda não tentou buscar, buscar da API
         if (!ACCESS_TOKEN && !tokenCheckAttempted) {
+            console.log('[DASHBOARD] Tentando obter token via sessão...');
             tokenCheckAttempted = true;
             const success = await fetchTokenFromSession();
+            console.log('[DASHBOARD] Resultado de fetchTokenFromSession:', success);
+
             if (!success) {
                 showNotification('Erro: Sem autenticação. Faça login novamente.', 'error');
                 setTimeout(() => window.location.href = '/', 2000);
@@ -22,50 +28,65 @@ async function initDashboard() {
 
         // Se não tem token agora, redirecionar (não ficar em loop)
         if (!ACCESS_TOKEN) {
+            console.log('[DASHBOARD] Ainda não tem ACCESS_TOKEN. Redirecionando...');
             showNotification('Erro: Sem autenticação. Faça login novamente.', 'error');
             setTimeout(() => window.location.href = '/', 2000);
             return;
         }
 
+        console.log('[DASHBOARD] Token obtido. Carregando portfólios...');
         await loadPortfolios();
+        console.log('[DASHBOARD] Dashboard carregado com sucesso');
     } catch (err) {
+        console.error('[DASHBOARD] Erro ao inicializar:', err);
         showNotification('Erro ao inicializar dashboard: ' + err.message, 'error');
-        console.error(err);
     }
 }
 
 async function fetchTokenFromSession() {
     try {
+        console.log('[TOKEN] Buscando token em /auth/session-token/...');
         const response = await fetch('/auth/session-token/', {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include', // Inclui cookies de sessão
         });
 
+        console.log('[TOKEN] Response status:', response.status);
+
         if (response.ok) {
             const data = await response.json();
+            console.log('[TOKEN] Dados recebidos:', !!data.access);
+
             if (data.access) {
                 ACCESS_TOKEN = data.access;
                 localStorage.setItem('access_token', data.access);
                 localStorage.setItem('refresh_token', data.refresh);
+                console.log('[TOKEN] Token salvo com sucesso');
                 return true;
             }
+        } else {
+            console.error('[TOKEN] Erro na resposta:', response.status, response.statusText);
+            const errorData = await response.json().catch(() => ({}));
+            console.error('[TOKEN] Detalhes do erro:', errorData);
         }
         return false;
     } catch (err) {
-        console.error('Erro ao buscar token:', err);
+        console.error('[TOKEN] Erro ao buscar token:', err);
         return false;
     }
 }
 
 async function loadPortfolios() {
     try {
+        console.log('[PORTFOLIOS] GET /portfolios/...');
         portfolios = await getPortfolios();
+        console.log('[PORTFOLIOS] Carregados:', portfolios.length);
         renderPortfolios();
         updateCount();
     } catch (err) {
         showNotification('Erro ao carregar portfólios', 'error');
-        console.error(err);
+        console.error('[PORTFOLIOS]', err);
     }
 }
 
@@ -108,28 +129,46 @@ function updateCount() {
 }
 
 function openCreatePortfolioModal() {
-    document.getElementById('createPortfolioModal').classList.add('show');
+    console.log('[MODAL] Abrindo modal de novo portfólio');
+    const modal = document.getElementById('createPortfolioModal');
+    modal.style.display = 'flex';
+    modal.classList.add('show');
     setTimeout(() => document.getElementById('portfolio-name-input').focus(), 50);
 }
 
 function closeCreatePortfolioModal() {
-    document.getElementById('createPortfolioModal').classList.remove('show');
+    console.log('[MODAL] Fechando modal de novo portfólio');
+    const modal = document.getElementById('createPortfolioModal');
+    modal.style.display = 'none';
+    modal.classList.remove('show');
     document.getElementById('portfolio-name-input').value = '';
 }
 
 async function handleCreatePortfolio(event) {
     event.preventDefault();
+    console.log('[CREATE] Iniciando criação de portfólio');
+    console.log('[CREATE] ACCESS_TOKEN existe?', !!ACCESS_TOKEN);
+
     const name = document.getElementById('portfolio-name-input').value.trim();
-    if (!name) return showNotification('Nome obrigatório', 'error');
+    console.log('[CREATE] Nome digitado:', name);
+
+    if (!name) {
+        console.log('[CREATE] Nome vazio');
+        return showNotification('Nome obrigatório', 'error');
+    }
 
     try {
+        console.log('[CREATE] Chamando createPortfolio com nome:', name);
         const novo = await createPortfolio(name);
+        console.log('[CREATE] Portfólio criado com sucesso:', novo);
+
         portfolios.push(novo);
         renderPortfolios();
         updateCount();
         closeCreatePortfolioModal();
         showNotification('Portfólio criado com sucesso!', 'success');
     } catch (err) {
+        console.error('[CREATE] Erro:', err.message);
         showNotification('Erro ao criar portfólio: ' + err.message, 'error');
     }
 }
@@ -229,11 +268,13 @@ function openTickerDetailsModal(data) {
         </p>
     `;
 
+    modal.style.display = 'flex';
     modal.classList.add('show');
 }
 
 function closeTickerDetailsModal() {
     const modal = document.getElementById('tickerDetailsModal');
+    modal.style.display = 'none';
     modal.classList.remove('show');
 }
 

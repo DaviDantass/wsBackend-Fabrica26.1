@@ -38,21 +38,46 @@ class PortfolioSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
     def create(self, validated_data):
-        # portfolio será associado ao usuário logado - jwt
-        user = self.context['request'].user
+        # Portfolio será associado ao usuário logado - JWT
+        if not self.context:
+            raise serializers.ValidationError(
+                {"error": "Contexto não fornecido. Usuário não autenticado."}
+            )
+        
+        request = self.context.get('request')
+        if not request:
+            raise serializers.ValidationError(
+                {"error": "Request não encontrado no contexto."}
+            )
+        
+        user = request.user
+        if not user or not user.is_authenticated:
+            raise serializers.ValidationError(
+                {"error": "Usuário não autenticado."}
+            )
+        
         return Portfolio.objects.create(user=user, **validated_data)
+
+    def update(self, instance, validated_data):
+        # Atualizar nome do portfólio
+        instance.name = validated_data.get('name', instance.name)
+        instance.save()
+        return instance
 
 
 class AssetSerializer(serializers.ModelSerializer):
     """
     Serializer para criar assets em um portfólio.
     Portfolio_id vem do URL, não do body.
+    Sincroniza dados da BRAPI automaticamente no cadastro.
     """
 
     class Meta:
         model = Asset
-        fields = ['id', 'ticker', 'quantity', 'purchase_price']
-        read_only_fields = ['id']
+        fields = ['id', 'ticker', 'quantity', 'purchase_price', 'company_name', 'sector', 
+                  'current_price', 'price_change_percent', 'market_cap', 'dividend_yield']
+        read_only_fields = ['id', 'company_name', 'sector', 'current_price', 'price_change_percent', 
+                           'market_cap', 'dividend_yield']
 
     def validate(self, attrs):
         portfolio_id = self.context.get('portfolio_id')
@@ -82,7 +107,9 @@ class AssetSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"ticker": f"Asset '{ticker}' já existe neste portfólio."}
             )
+        
         # Puxar dados da BRAPI
+        brapi_data = {}
         try:
             brapi_data = fetch_brapi_data(ticker)
         except Exception as e:
@@ -90,9 +117,26 @@ class AssetSerializer(serializers.ModelSerializer):
                 {"ticker": f"Erro ao buscar dados da BRAPI: {str(e)}"}
             )
         
-        asset = Asset.objects.create(
-            portfolio=portfolio,
-            ticker=ticker,
-            **validated_data
-        )
+        # Extrair dados relevantes da BRAPI
+        asset_data = {
+            'portfolio': portfolio,
+            'ticker': ticker,
+            **validated_data,
+            'company_name': brapi_data.get('longName') or brapi_data.get('shortName'),
+            'sector': brapi_data.get('sector'),
+            'current_price': brapi_data.get('price'),
+            'price_change_percent': brapi_data.get('changePercent'),
+            'market_cap': brapi_data.get('marketCap'),
+            'dividend_yield': brapi_data.get('dividendYield'),
+        }
+        
+        asset = Asset.objects.create(**asset_data)
         return asset
+
+    def update(self, instance, validated_data):
+        # Atualizar apenas quantidade e preço de compra
+        # Dados da BRAPI permanecem imutáveis
+        instance.quantity = validated_data.get('quantity', instance.quantity)
+        instance.purchase_price = validated_data.get('purchase_price', instance.purchase_price)
+        instance.save()
+        return instance

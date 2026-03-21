@@ -76,11 +76,24 @@ class PortfolioListCreateView(generics.ListCreateAPIView):
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
+    
+    def create(self, request, *args, **kwargs):
+        # Validar que name foi fornecido
+        if not request.data.get('name'):
+            return Response(
+                {'error': 'Campo "name" é obrigatório.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return super().create(request, *args, **kwargs)
 
 
-class PortfolioDestroyView(generics.DestroyAPIView):
+class PortfolioRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     """
+    GET    /portfolios/<id>/  - Obter detalhes de um portfólio
+    PUT    /portfolios/<id>/  - Atualizar portfólio (nome)
+    PATCH  /portfolios/<id>/  - Atualizar parcialmente
     DELETE /portfolios/<id>/  - Deletar um portfólio
+    Body (PUT): {"name": "Novo Nome"}
     """
     serializer_class = PortfolioSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -88,6 +101,11 @@ class PortfolioDestroyView(generics.DestroyAPIView):
 
     def get_queryset(self):
         return self.request.user.portfolios.all()
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
 
 # Web Views - Dashboard
@@ -132,6 +150,23 @@ class PortfolioAssetListCreateView(generics.ListCreateAPIView):
 class AssetDeleteView(generics.DestroyAPIView):
     """
     DELETE /assets/<id>/     - Deletar um asset
+    """
+    serializer_class = AssetSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'id'
+
+    def get_queryset(self):
+        user = self.request.user
+        return Asset.objects.filter(portfolio__user=user)
+
+
+class AssetRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    GET    /assets/<id>/         - Obter detalhes de um asset
+    PUT    /assets/<id>/         - Atualizar asset (quantidade, preço de compra)
+    PATCH  /assets/<id>/         - Atualizar parcialmente
+    DELETE /assets/<id>/         - Deletar um asset
+    Body (PUT): {"quantity": 150, "purchase_price": 26.50}
     """
     serializer_class = AssetSerializer
     permission_classes = [permissions.IsAuthenticated]
