@@ -1,23 +1,25 @@
-# 📈 Moneta Backend API
+# Moneta Backend API
 
-API REST para gerenciamento de portfólio de investimentos com **Django 5.2** + **DRF** + **JWT** + **BRAPI**.
+API REST para gerenciamento de portfólio de investimentos, desenvolvida com **Django**, **DRF**, **JWT** e **BRAPI**. O projeto segue boas práticas de desenvolvimento — estrutura modular, commits semânticos e documentação detalhada — com foco em clareza e manutenibilidade.
 
-🎯 **Features:** Autenticação JWT, múltiplos portfólios(crud), gerencimento de ativos, sincronização em tempo real com BRAPI (B3).
-
----
-
-## 🛠️ Stack
-
-- **Backend:** Django 5.2.12 + Django REST Framework 3.14
-- **Autenticação:** JWT (simplejwt 5.4)
-- **CORS:** django-cors-headers 4.3
-- **API de dados:** BRAPI (cotações B3)
-- **BD:** SQLite (dev), PostgreSQL (prod)
+**Features:** autenticação JWT, múltiplos portfólios (CRUD), gerenciamento de ativos e sincronização em tempo real com a B3 via BRAPI.
 
 ---
 
-## 📁 Estrutura
+## Stack
 
+| Camada | Tecnologia |
+|--------|-----------|
+| Backend | Django 5.2.12 + Django REST Framework 3.14 |
+| Autenticação | simplejwt 5.4 |
+| CORS | django-cors-headers 4.3 |
+| Dados de mercado | BRAPI (cotações B3) |
+| Banco de dados | SQLite |
+| Infraestrutura | Dockerfile & Docker-Compose |
+
+---
+
+## Estrutura do projeto
 ```
 moneta_backend/
 ├── core/              # Config Django (settings, urls, wsgi)
@@ -37,7 +39,7 @@ moneta_backend/
 
 ---
 
-## 📊 Modelos
+## Modelos
 
 | Modelo | Campos | Relação |
 |--------|--------|---------|
@@ -47,143 +49,94 @@ moneta_backend/
 
 *Campo único
 
-**Características:**
-- Asset sincroniza automaticamente com BRAPI ao criar
+- Asset sincroniza automaticamente com BRAPI ao ser criado
 - Validação de ticker duplicado por portfólio
-- Retry automático (3x) com backoff exponencial para BRAPI
+- Retry automático (3x) com backoff exponencial nas chamadas à BRAPI
 
 ---
 
-## 🚀 Setup Rápido
+## Setup
 
-**Pré-requisitos:** Python 3.9+ (recomendo 3.11.8)
-
+**Pré-requisitos:** Python 3.9+ (recomendado: 3.11.8)
 ```bash
-# Clonar e entrar no diretório
 git clone https://github.com/DaviDantass/wsBackend-Fabrica26.1
 cd wsBackend-Fabrica26.1
 
-# Criar venv (Python 3.9+)
+# Criar e ativar venv
 python -m venv venv
-# ou, se tiver Python 3.11 instalado - recomendo, e tambem recomendo adicionar como interpreter depois de criada: ctrl + shift + p: interpreter -> 3.11.8 venv:
-py -3.11 -m venv venv
+# py -3.11 -m venv venv  ← recomendado; adicione como interpreter: Ctrl+Shift+P → "Python: Select Interpreter"
+venv\Scripts\activate    # Windows
+source venv/bin/activate # Linux/Mac
 
-venv\Scripts\activate  # Windows
-source venv/bin/activate  # Linux/Mac
-
-# Instalar dependências
 pip install -r requirements.txt
 
-# Migrações
 cd moneta_backend
 python manage.py migrate
-
-# Admin (opcional)
-python manage.py createsuperuser
-
-# Rodar servidor
+python manage.py createsuperuser  # opcional
 python manage.py runserver
 ```
 
-✅ API em: **http://127.0.0.1:8000/**
+API disponível em **http://127.0.0.1:8000/**
 
 ---
 
-## � Docker
+## Docker
 
-**Pré-requisitos:** Docker Desktop instalado
+**Pré-requisito:** Docker Desktop instalado
 
-### Build da Imagem
+### Build da imagem
 ```bash
-# A partir da raiz do projeto
 docker build -t moneta-backend:latest .
 ```
 
-### Executar Container
-
-**Desenvolvimento (com SQLite):**
+### Rodar com Docker Compose
 ```bash
-docker run -p 8000:8000 \
-  -it \
-  moneta-backend:latest \
-  sh -c "cd moneta_backend && \
-         python manage.py migrate && \
-         python manage.py collectstatic --noinput && \
-         gunicorn --bind 0.0.0.0:8000 core.wsgi:application"
+docker-compose up -d
+docker-compose logs -f
+docker-compose exec django python manage.py createsuperuser  # primeira vez
+docker-compose down
 ```
 
-**Produção (com PostgreSQL):**
-```bash
-docker run -p 8000:8000 \
-  -e DEBUG=False \
-  -e DATABASE_URL=postgresql://user:pass@db_host:5432/db_name \
-  -e SECRET_KEY=sua-chave-secreta \
-  -it \
-  moneta-backend:latest
-```
-
-**Parar container anterior (se porta ocupada):**
-```bash
-docker stop $(docker ps -q)
-```
-
-**Usar porta diferente:**
-```bash
-docker run -p 8001:8000 -it moneta-backend:latest
-# Acessa em http://localhost:8001
-```
-
-✅ Multi-stage build otimizado (~70% redução de tamanho)
-✅ Usuário não-root por segurança
-✅ Gunicorn + 4 workers para produção
+✅ Django: **http://localhost:8000** · ✅ SQLite persistido em volume Docker · ✅ Multi-stage build (~70% menor)
 
 ---
 
-## �📡 API REST
+## API REST
 
-**Autenticação:** Todas as rotas requerem token JWT (exceto `/token/` e `/register/`)
+**Autenticação:** todas as rotas exigem token JWT, exceto `/token/` e `/users/`.
 
 | Endpoint | Método | Descrição |
 |----------|--------|-----------|
 | `/token/` | POST | Obter token JWT |
 | `/token/refresh/` | POST | Renovar token |
-| `/users/` | POST | Registrar novo usuário |
-| `/users/profile/` | GET/PUT | Perfil do usuário |
-| `/portfolios/` | GET/POST | Listar/criar portfólios |
-| `/portfolios/<id>/` | GET/PUT/DELETE | CRUD portfólio |
-| `/portfolios/<id>/assets/` | GET/POST | Listar/criar ativos |
-| `/assets/<id>/` | GET/PUT/DELETE | CRUD ativo |
+| `/users/` | POST | Registrar usuário |
+| `/users/profile/` | GET · PUT | Perfil do usuário |
+| `/portfolios/` | GET · POST | Listar/criar portfólios |
+| `/portfolios/<id>/` | GET · PUT · DELETE | CRUD portfólio |
+| `/portfolios/<id>/assets/` | GET · POST | Listar/criar ativos |
+| `/assets/<id>/` | GET · PUT · DELETE | CRUD ativo |
 | `/assets/details/<ticker>/` | GET | Dados BRAPI do ticker |
-
-**Exemplo de requisição:**
 ```bash
-# Login
+# Autenticar
 curl -X POST http://127.0.0.1:8000/token/ \
   -H "Content-Type: application/json" \
   -d '{"username":"usuario","password":"senha"}'
-
-# Resultado: {"access":"token_jwt...","refresh":"token..."}
+# → {"access":"<token>","refresh":"<token>"}
 
 # Usar token
-curl -X GET http://127.0.0.1:8000/portfolios/ \
-  -H "Authorization: Bearer token_jwt..."
+curl http://127.0.0.1:8000/portfolios/ \
+  -H "Authorization: Bearer <token>"
 ```
 
-**Produção:**
-- ❌ DEBUG=False
-- ❌ Guardar SECRET_KEY fechada (use env vars)
-- ❌ ALLOWED_HOSTS específico
-- ❌ CORS_ALLOW_ALL_ORIGINS=False
-- ❌ Database: PostgreSQL
-- ✅ HTTPS obrigatório
+**Checklist de produção:**
+- `DEBUG=False`
+- `SECRET_KEY` via variável de ambiente
+- `ALLOWED_HOSTS` específico
+- `CORS_ALLOW_ALL_ORIGINS=False`
+- HTTPS obrigatório
 
 ---
 
-## 📚 BRAPI Integration (gratuita)
+## BRAPI Integration
 
-`utils/brapi.py` implementa:
-- ✅ Retry automático (3x) com backoff exponencial
-- ✅ Timeout 10s
-- ✅ Validação de ticker
-- ✅ Tratamento de erros (429, 502, 503)
-
+`utils/brapi.py` implementa retry automático (3×) com backoff exponencial, timeout de 10s, validação de ticker e tratamento de erros HTTP (429, 502, 503).

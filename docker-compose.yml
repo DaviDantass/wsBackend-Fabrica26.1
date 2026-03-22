@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  django:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: moneta-backend
+    command: >
+      sh -c "cd moneta_backend &&
+             python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 60 core.wsgi:application"
+    environment:
+      DEBUG: ${DEBUG:-True}
+      SECRET_KEY: ${SECRET_KEY:-django-insecure-131ta=lnd0h5etab8)ggfy!pc=@tvile4-fa@097b^#vuc9@%v}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,web,django}
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - static_volume:/app/moneta_backend/staticfiles
+    restart: unless-stopped
+
+volumes:
+  static_volume:
+    driver: local
