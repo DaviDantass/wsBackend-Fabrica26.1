@@ -82,14 +82,14 @@ API disponível em **http://127.0.0.1:8000/**
 
 ## Docker
 
-⚠️ **IMPORTANTE:** O Docker aqui é **APENAS PARA O BACKEND** (API REST). Ele não contém frontend/interface visual.
+Docker aqui é foca no serviço backend (API REST). Não na UI.
 
 **Pré-requisito:** Docker Desktop instalado
 
 ### O que o Docker faz:
 - ✅ Sobe o **PostgreSQL** (banco de dados)
 - ✅ Sobe o **Django** (API backend na porta 8000)
-- ❌ **NÃO** inclui frontend/site visual
+- não inclui frontend/site visual
 
 ### Para rodar tudo (Backend + Banco de Dados):
 ```bash
