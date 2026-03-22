@@ -89,7 +89,57 @@ python manage.py runserver
 
 ---
 
-## 📡 API REST
+## � Docker
+
+**Pré-requisitos:** Docker Desktop instalado
+
+### Build da Imagem
+```bash
+# A partir da raiz do projeto
+docker build -t moneta-backend:latest .
+```
+
+### Executar Container
+
+**Desenvolvimento (com SQLite):**
+```bash
+docker run -p 8000:8000 \
+  -it \
+  moneta-backend:latest \
+  sh -c "cd moneta_backend && \
+         python manage.py migrate && \
+         python manage.py collectstatic --noinput && \
+         gunicorn --bind 0.0.0.0:8000 core.wsgi:application"
+```
+
+**Produção (com PostgreSQL):**
+```bash
+docker run -p 8000:8000 \
+  -e DEBUG=False \
+  -e DATABASE_URL=postgresql://user:pass@db_host:5432/db_name \
+  -e SECRET_KEY=sua-chave-secreta \
+  -it \
+  moneta-backend:latest
+```
+
+**Parar container anterior (se porta ocupada):**
+```bash
+docker stop $(docker ps -q)
+```
+
+**Usar porta diferente:**
+```bash
+docker run -p 8001:8000 -it moneta-backend:latest
+# Acessa em http://localhost:8001
+```
+
+✅ Multi-stage build otimizado (~70% redução de tamanho)
+✅ Usuário não-root por segurança
+✅ Gunicorn + 4 workers para produção
+
+---
+
+## �📡 API REST
 
 **Autenticação:** Todas as rotas requerem token JWT (exceto `/token/` e `/register/`)
 
