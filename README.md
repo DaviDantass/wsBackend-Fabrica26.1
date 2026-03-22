@@ -14,8 +14,8 @@ API REST para gerenciamento de portfólio de investimentos, desenvolvida com **D
 | Autenticação | simplejwt 5.4 |
 | CORS | django-cors-headers 4.3 |
 | Dados de mercado | BRAPI (cotações B3) |
-| Banco de dados | SQLite |
-| Infraestrutura | Dockerfile & Docker-Compose |
+| Banco de dados | PostgreSQL 15 |
+| Infraestrutura | Docker Compose (Backend + BD) |
 
 ---
 
@@ -82,22 +82,48 @@ API disponível em **http://127.0.0.1:8000/**
 
 ## Docker
 
+⚠️ **IMPORTANTE:** O Docker aqui é **APENAS PARA O BACKEND** (API REST). Ele não contém frontend/interface visual.
+
 **Pré-requisito:** Docker Desktop instalado
 
-### Build da imagem
-```bash
-docker build -t moneta-backend:latest .
-```
+### O que o Docker faz:
+- ✅ Sobe o **PostgreSQL** (banco de dados)
+- ✅ Sobe o **Django** (API backend na porta 8000)
+- ❌ **NÃO** inclui frontend/site visual
 
-### Rodar com Docker Compose
+### Para rodar tudo (Backend + Banco de Dados):
 ```bash
 docker-compose up -d
-docker-compose logs -f
-docker-compose exec django python manage.py createsuperuser  # primeira vez
-docker-compose down
 ```
 
-✅ Django: **http://localhost:8000** · ✅ SQLite persistido em volume Docker · ✅ Multi-stage build (~70% menor)
+Isso vai:
+1. Iniciar PostgreSQL no container `moneta-postgres`
+2. Iniciar Django (API) no container `moneta-backend`
+3. Aplicar migrations automaticamente
+4. Deixar tudo rodando em background
+
+### Acessar:
+- **API Backend:** http://localhost:8000
+- **Banco de dados:** PostgreSQL na porta 5432 (host: localhost, user: manager, password: manager123)
+
+### Comandos úteis:
+```bash
+# Ver logs em tempo real
+docker-compose logs -f
+
+# Criar superusário (admin)
+docker-compose exec django python manage.py createsuperuser
+
+# Parar tudo
+docker-compose down
+
+# Parar e remover dados (excluir banco de dados)
+docker-compose down -v
+```
+
+**O que é persistido:**
+- ✅ Dados do PostgreSQL (em volume Docker)
+- ✅ Arquivos estáticos da API (CSS/JS do admin Django)
 
 ---
 

@@ -1,6 +1,19 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: moneta-postgres
+    environment:
+      POSTGRES_DB: moneta_db
+      POSTGRES_USER: manager
+      POSTGRES_PASSWORD: manager123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
   django:
     build:
       context: .
@@ -15,13 +28,23 @@ services:
       DEBUG: ${DEBUG:-True}
       SECRET_KEY: ${SECRET_KEY:-django-insecure-131ta=lnd0h5etab8)ggfy!pc=@tvile4-fa@097b^#vuc9@%v}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,web,django}
+      DATABASE_ENGINE: postgresql
+      DATABASE_NAME: moneta_db
+      DATABASE_USER: manager
+      DATABASE_PASSWORD: manager123
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
     ports:
       - "8000:8000"
     volumes:
       - .:/app
       - static_volume:/app/moneta_backend/staticfiles
+    depends_on:
+      - postgres
     restart: unless-stopped
 
 volumes:
+  postgres_data:
+    driver: local
   static_volume:
     driver: local

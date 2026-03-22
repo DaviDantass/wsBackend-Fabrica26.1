@@ -89,9 +89,9 @@ if DB_ENGINE == 'postgresql':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DATABASE_NAME', 'moneta'),
-            'USER': os.getenv('DATABASE_USER', 'postgres'),
-            'PASSWORD': os.getenv('DATABASE_PASSWORD', 'postgres'),
+            'NAME': os.getenv('DATABASE_NAME', 'moneta_db'),
+            'USER': os.getenv('DATABASE_USER', 'manager'),
+            'PASSWORD': os.getenv('DATABASE_PASSWORD', 'manager123'),
             'HOST': os.getenv('DATABASE_HOST', 'localhost'),
             'PORT': os.getenv('DATABASE_PORT', '5432'),
         }
